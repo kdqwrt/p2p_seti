@@ -1,0 +1,21 @@
+{
+  "node_state_dir": "state/node2",
+  "listen_host": "127.0.0.1",
+  "listen_port": 9102,
+  "bootstrap_peers": [
+    {
+      "host": "127.0.0.1",
+      "port": 9101
+    }
+  ],
+  "node_id_bits": 256,
+  "k_bucket_size": 4,
+  "alpha": 3,
+  "connect_timeout_ms": 3000,
+  "read_timeout_ms": 5000,
+  "ping_timeout_ms": 5000,
+  "max_frame_payload": 65536,
+  "protocol_version": 1,
+  "log_level": "INFO",
+  "log_file": "logs/node2.log"
+}

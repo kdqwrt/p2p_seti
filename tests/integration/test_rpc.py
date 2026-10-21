@@ -67,6 +67,10 @@ async def test_wrong_request_id_is_rejected():
                 host="127.0.0.1",
                 port=port,
                 frame=request,
+                connect_timeout=3.0,
+                response_timeout=5.0,
+                protocol_version=1,
+                max_frame_payload=65_536,
             )
 
     finally:

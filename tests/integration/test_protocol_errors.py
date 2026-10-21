@@ -36,6 +36,9 @@ async def start_test_server() -> tuple[TCPServer, int]:
         host="127.0.0.1",
         port=0,
         local_contact=make_contact(9101),
+        read_timeout=5.0,
+        protocol_version=PROTOCOL_VERSION,
+        max_frame_payload=65_536,
     )
 
     await server.start()

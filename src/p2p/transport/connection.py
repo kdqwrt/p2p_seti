@@ -17,10 +17,10 @@ async def send_request(
     host: str,
     port: int,
     frame: Frame,
-    connect_timeout: float = 3.0,
-    response_timeout: float = 5.0,
-    protocol_version: int = 1,
-    max_frame_payload: int = 65_536,
+    connect_timeout: float,
+    response_timeout: float,
+    protocol_version: int,
+    max_frame_payload: int,
     local_node_label: str = "stage1-unknown",
 ) -> Frame:
     writer: asyncio.StreamWriter | None = None
@@ -62,12 +62,18 @@ async def send_request(
             expected_version=protocol_version,
             max_payload=max_frame_payload,
         )
+        deadline = asyncio.get_running_loop().time() + response_timeout
 
         while True:
             try:
+                remaining = deadline - asyncio.get_running_loop().time()
+
+                if remaining <= 0:
+                    raise TimeoutError
+
                 data = await asyncio.wait_for(
                     reader.read(4096),
-                    timeout=response_timeout,
+                    timeout=remaining,
                 )
             except TimeoutError as exc:
                 logger.warning(
@@ -127,9 +133,9 @@ async def send_frame(
     host: str,
     port: int,
     frame: Frame,
-    connect_timeout: float = 3.0,
-    protocol_version: int = 1,
-    max_frame_payload: int = 65_536,
+    connect_timeout: float,
+    protocol_version: int,
+    max_frame_payload: int,
     local_node_label: str = "stage1-unknown",
 ) -> None:
     writer: asyncio.StreamWriter | None = None

@@ -27,3 +27,17 @@ state/
 # OS
 .DS_Store
 Thumbs.db
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Test and coverage artifacts
+.coverage
+htmlcov/
+coverage.xml
+
+# Temporary files
+*.tmp
+*.bak

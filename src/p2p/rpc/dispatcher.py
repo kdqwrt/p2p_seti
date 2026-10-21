@@ -1,4 +1,6 @@
+
 import time
+from collections.abc import Callable
 
 from p2p.protocol.constants import MessageType
 from p2p.protocol.contact import Contact
@@ -13,8 +15,13 @@ from p2p.protocol.messages import (
 class Dispatcher:
     """Маршрутизирует входящие запросы к обработчикам."""
 
-    def __init__(self, local_contact: Contact) -> None:
+    def __init__(
+        self,
+        local_contact: Contact,
+        on_ping: Callable[[Contact], None] | None = None,
+    ) -> None:
         self.local_contact = local_contact
+        self.on_ping = on_ping
 
     async def dispatch(self, frame: Frame) -> Frame:
         if frame.message_type == MessageType.PING:
@@ -35,7 +42,7 @@ class Dispatcher:
             return self._make_error(
                 frame,
                 code="NOT_IMPLEMENTED",
-                message="FIND_NODE is not implemented in stage 1",
+                message="FIND_NODE is not implemented",
             )
 
         return self._make_error(
@@ -47,12 +54,13 @@ class Dispatcher:
     def _handle_ping(self, frame: Frame) -> Frame:
         ping = decode_ping(frame.payload)
 
+        if self.on_ping is not None:
+            self.on_ping(ping["sender"])
+
         payload = encode_pong(
             responder=self.local_contact,
             ping_timestamp_ms=ping["timestamp_ms"],
-            responder_timestamp_ms=int(
-                time.time() * 1000
-            ),
+            responder_timestamp_ms=int(time.time() * 1000),
         )
 
         return Frame(

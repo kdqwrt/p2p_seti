@@ -29,6 +29,9 @@ async def test_invalid_ping_payload_does_not_crash_server():
         host="127.0.0.1",
         port=0,
         local_contact=local_contact,
+        read_timeout=5.0,
+        protocol_version=PROTOCOL_VERSION,
+        max_frame_payload=65_536,
     )
 
     await server.start()

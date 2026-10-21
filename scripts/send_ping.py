@@ -75,6 +75,10 @@ async def main() -> None:
         host=args.host,
         port=args.port,
         frame=frame,
+        connect_timeout=3.0,
+        response_timeout=5.0,
+        protocol_version=1,
+        max_frame_payload=65_536,
     )
 
     print(

@@ -10,6 +10,9 @@ from p2p.protocol.messages import encode_error
 from p2p.protocol.payload_codec import PayloadError
 from p2p.rpc.dispatcher import Dispatcher
 from p2p.transport.stream_decoder import StreamDecoder
+from collections.abc import Callable
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +23,11 @@ class TCPServer:
         host: str,
         port: int,
         local_contact: Contact,
-        read_timeout: float = 5.0,
-        protocol_version: int = 1,
-        max_frame_payload: int = 65_536,
+        read_timeout: float,
+        protocol_version: int,
+        max_frame_payload: int,
         local_node_label: str = "stage1-unknown",
+        on_ping: Callable[[Contact], None] | None = None,
     ) -> None:
         self.host = host
         self.port = port
@@ -32,7 +36,10 @@ class TCPServer:
         self.max_frame_payload = max_frame_payload
         self.local_node_label = local_node_label
         self._server: asyncio.Server | None = None
-        self._dispatcher = Dispatcher(local_contact)
+        self._dispatcher = Dispatcher(
+            local_contact,
+            on_ping=on_ping,
+        )
 
     async def start(self) -> None:
         self._server = await asyncio.start_server(
@@ -80,15 +87,29 @@ class TCPServer:
         )
         close_reason = "normal"
 
+        frame_deadline: float | None = None
+
         try:
             while True:
                 try:
+                    loop = asyncio.get_running_loop()
+
+                    if frame_deadline is None:
+                        timeout = self.read_timeout
+                    else:
+                        timeout = frame_deadline - loop.time()
+
+                        if timeout <= 0:
+                            raise TimeoutError
+
                     data = await asyncio.wait_for(
                         reader.read(4096),
-                        timeout=self.read_timeout,
+                        timeout=timeout,
                     )
+
                 except TimeoutError:
                     close_reason = "read_timeout"
+
                     logger.warning(
                         "local_node=%s direction=IN connection_id=%s rpc_id=- event=read_timeout peer=%s",
                         self.local_node_label, connection_id, peer,
@@ -119,6 +140,16 @@ class TCPServer:
                         self.local_node_label, connection_id, peer, exc,
                     )
                     break
+
+
+                if decoder.buffered_bytes > 0:
+                    if frame_deadline is None:
+                        frame_deadline = (
+                            asyncio.get_running_loop().time()
+                            + self.read_timeout
+                        )
+                else:
+                    frame_deadline = None
 
                 for frame in frames:
                     try:

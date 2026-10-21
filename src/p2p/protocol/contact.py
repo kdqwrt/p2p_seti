@@ -1,5 +1,11 @@
+
 from dataclasses import dataclass
 
+from p2p.identity.identity import (
+    IDENTITY_ALGORITHM,
+    IdentityError,
+    calculate_node_id,
+)
 from p2p.protocol.payload_codec import PayloadError
 
 
@@ -39,9 +45,7 @@ class Contact:
         }
 
         if set(data.keys()) != expected_fields:
-            raise PayloadError(
-                "Contact contains invalid fields"
-            )
+            raise PayloadError("Contact contains invalid fields")
 
         contact = cls(
             node_id=data["node_id"],
@@ -59,31 +63,14 @@ def validate_contact(contact: Contact) -> None:
     if not isinstance(contact.node_id, bytes):
         raise PayloadError("Contact node_id must be bytes")
 
-    # Полная длина NodeID будет обязательна после появления
-    # криптографической identity на этапе 2.
-    if len(contact.node_id) > 32:
-        raise PayloadError(
-            "Contact node_id must not exceed 32 bytes"
-        )
-
     if not isinstance(contact.identity_algorithm, str):
         raise PayloadError(
             "Contact identity_algorithm must be a string"
         )
 
-    if len(contact.identity_algorithm) > 32:
-        raise PayloadError(
-            "Contact identity_algorithm is too long"
-        )
-
     if not isinstance(contact.identity_public_key, bytes):
         raise PayloadError(
             "Contact identity_public_key must be bytes"
-        )
-
-    if len(contact.identity_public_key) > 128:
-        raise PayloadError(
-            "Contact identity_public_key is too large"
         )
 
     if not isinstance(contact.host, str):
@@ -97,3 +84,46 @@ def validate_contact(contact: Contact) -> None:
 
     if not 1 <= contact.port <= 65535:
         raise PayloadError("Contact port is out of range")
+
+    if contact.identity_algorithm == "stage1-none":
+        # Временная совместимость с тестами этапа 1.
+        if contact.node_id != b"":
+            raise PayloadError(
+                "Legacy contact must have empty node_id"
+            )
+
+        if contact.identity_public_key != b"":
+            raise PayloadError(
+                "Legacy contact must have empty public key"
+            )
+
+        return
+
+    if contact.identity_algorithm != IDENTITY_ALGORITHM:
+        raise PayloadError(
+            "Unsupported identity algorithm"
+        )
+
+    if len(contact.node_id) != 32:
+        raise PayloadError(
+            "Ed25519 contact node_id must be 32 bytes"
+        )
+
+    if len(contact.identity_public_key) != 32:
+        raise PayloadError(
+            "Ed25519 public key must be 32 bytes"
+        )
+
+    try:
+        expected_node_id = calculate_node_id(
+            contact.identity_public_key
+        )
+    except IdentityError as exc:
+        raise PayloadError(
+            "Invalid identity public key"
+        ) from exc
+
+    if contact.node_id != expected_node_id:
+        raise PayloadError(
+            "Contact NodeID does not match public key"
+        )

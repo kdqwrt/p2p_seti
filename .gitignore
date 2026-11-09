@@ -24,10 +24,6 @@ state/
 # Logs
 *.log
 
-# OS
-.DS_Store
-Thumbs.db
-
 # Environment variables and secrets
 .env
 .env.*
@@ -37,6 +33,16 @@ Thumbs.db
 .coverage
 htmlcov/
 coverage.xml
+
+# Experiment results
+experiments/results/
+
+# Temporary experiment files
+experiments/tmp/
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Temporary files
 *.tmp

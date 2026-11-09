@@ -1,22 +1,32 @@
+
 from enum import IntEnum
+
 
 PROTOCOL_VERSION = 1
 
-# Размер фиксированного заголовка кадра:
-# version        = 1 байт
-# type           = 1 байт
-# flags          = 2 байта
-# request_id     = 16 байт
-# payload_length = 4 байта
 
 HEADER_SIZE = 24
-
 MAX_FRAME_PAYLOAD = 65_536
 
+
 class MessageType(IntEnum):
+
     PING = 0x01
     PONG = 0x02
+
     FIND_NODE_REQUEST = 0x03
     FIND_NODE_RESPONSE = 0x04
+
+
+    STORE_REQUEST = 0x05
+    STORE_RESPONSE = 0x06
+    FIND_VALUE_REQUEST = 0x07
+    FIND_VALUE_RESPONSE = 0x08
+
+
+    STORE_ALIAS_REQUEST = 0x09
+    STORE_ALIAS_RESPONSE = 0x0A
+    FIND_ALIAS_REQUEST = 0x0B
+    FIND_ALIAS_RESPONSE = 0x0C
 
     ERROR = 0x7F

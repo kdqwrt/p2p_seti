@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import secrets
-
+from p2p.dht.alias_records import AliasRecord
 from p2p.protocol.codec import ProtocolError, encode_frame
 from p2p.protocol.contact import Contact
 from p2p.protocol.constants import MessageType
@@ -11,7 +11,8 @@ from p2p.protocol.payload_codec import PayloadError
 from p2p.rpc.dispatcher import Dispatcher
 from p2p.transport.stream_decoder import StreamDecoder
 from collections.abc import Callable
-
+from collections.abc import Awaitable
+from p2p.dht.records import NodeRecord
 
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,17 @@ class TCPServer:
         max_frame_payload: int,
         local_node_label: str = "stage1-unknown",
         on_ping: Callable[[Contact], None] | None = None,
+            on_find_node: Callable[[bytes], list[Contact]] | None = None,
+            on_store: Callable[[NodeRecord], Awaitable[bytes]] | None = None,
+            on_find_value: Callable[
+                [bytes], Awaitable[NodeRecord | None]
+            ] | None = None,
+        on_store_alias: Callable[
+            [AliasRecord], Awaitable[bytes]
+        ] | None = None,
+        on_find_alias: Callable[
+            [str], Awaitable[list[AliasRecord]]
+        ] | None = None,
     ) -> None:
         self.host = host
         self.port = port
@@ -39,6 +51,11 @@ class TCPServer:
         self._dispatcher = Dispatcher(
             local_contact,
             on_ping=on_ping,
+            on_find_node=on_find_node,
+            on_store=on_store,
+            on_find_value=on_find_value,
+            on_store_alias=on_store_alias,
+            on_find_alias=on_find_alias,
         )
 
     async def start(self) -> None:
